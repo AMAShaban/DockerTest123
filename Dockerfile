@@ -1,23 +1,24 @@
 FROM ubuntu:22.04
 
-# 1. Install System Dependencies (Java, X11, and OpenGL)
+# Install Java, X11 virtual display, and OpenGL drivers
+USER root
 RUN apt-get update && apt-get install -y \
     python3-pip \
     openjdk-21-jre-headless \
     libgl1-mesa-dri \
     libgl1-mesa-glx \
     xvfb \
-    x11vnc \
-    python3-numpy \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install PortableMC and Jupyter
-RUN pip3 install portablemc jupyterlab
+# Create the Binder user (required)
+ARG NB_USER=jovyan
+ARG NB_UID=1000
+ENV USER ${NB_USER}
+ENV HOME /home/${NB_USER}
+RUN adduser --disabled-password --gecos "Default user" --uid ${NB_UID} ${NB_USER}
 
-# 3. Setup user to avoid root issues
-RUN useradd -m jovyan
-USER jovyan
-WORKDIR /home/jovyan
-
-# 4. Expose ports for Jupyter
-EXPOSE 8888
+COPY . ${HOME}
+USER root
+RUN chown -R ${NB_UID} ${HOME}
+USER ${NB_USER}
+WORKDIR ${HOME}
